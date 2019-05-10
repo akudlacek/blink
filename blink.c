@@ -153,4 +153,3 @@ void blink_set(blink_inst_t *inst, uint8_t num_blinks, uint8_t on_off)
 		inst->blink_bit &= ~(1 << num_blinks);
 	}
 }
-
