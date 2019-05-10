@@ -25,7 +25,7 @@ typedef enum
 
 typedef struct
 {
-	const uint32_t *tick_ms_ptr;
+	const volatile uint32_t *tick_ms_ptr;
 	uint32_t ticks_per_time_unit;  //One blink is on for time unit and off for another
 	uint32_t blink_separation;     //Blink separation is 1 time unit long and provides some dead time between blinks
 } blink_conf_t;
