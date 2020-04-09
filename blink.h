@@ -16,21 +16,21 @@
 /**************************************************************************************************
 *                                             DEFINES
 *************************************************^************************************************/
-typedef enum
+typedef enum blink_state_t
 {
 	GET_NEXT_SEQ,
 	BLINKING,
 	SEQ_SEPARATION
 } blink_state_t;
 
-typedef struct
+typedef struct blink_conf_t
 {
 	const volatile uint32_t *tick_ms_ptr;
 	uint32_t ticks_per_time_unit;  //One blink is on for time unit and off for another
 	uint32_t blink_separation;     //Blink separation is 1 time unit long and provides some dead time between blinks
 } blink_conf_t;
 
-typedef struct
+typedef struct blink_inst_t
 {
 	blink_conf_t conf;
 	blink_state_t state;
