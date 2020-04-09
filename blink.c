@@ -19,7 +19,7 @@
 ******************************************************************************/
 void blink_get_confg_defaults(blink_conf_t * const conf)
 {
-	conf->tick_ms_ptr          = 0;
+	conf->tick_ptr             = 0;
 	conf->ticks_per_time_unit  = 0;
 	conf->blink_separation     = 0;
 }
@@ -41,7 +41,7 @@ void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 	inst->out           = 0;
 	inst->count         = 0;
 	
-	inst->last_tick_ms  = 0;
+	inst->last_tick     = 0;
 }
 
 /******************************************************************************
@@ -51,7 +51,7 @@ void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 ******************************************************************************/
 uint8_t blink_task(blink_inst_t * const inst)
 {
-	if((*inst->conf.tick_ms_ptr - inst->last_tick_ms) >= (inst->conf.ticks_per_time_unit))
+	if((*inst->conf.tick_ptr - inst->last_tick) >= (inst->conf.ticks_per_time_unit))
 	{
 		switch(inst->state)
 		{
@@ -124,7 +124,7 @@ uint8_t blink_task(blink_inst_t * const inst)
 			break;
 		}
 		
-		inst->last_tick_ms = *inst->conf.tick_ms_ptr;
+		inst->last_tick = *inst->conf.tick_ptr;
 	}
 	
 	return inst->out;
