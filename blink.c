@@ -17,7 +17,7 @@
 *
 *  \note
 ******************************************************************************/
-void blink_get_confg_defaults(blink_conf_t *conf)
+void blink_get_confg_defaults(blink_conf_t * const conf)
 {
 	conf->tick_ms_ptr          = 0;
 	conf->ticks_per_time_unit  = 0;
@@ -29,7 +29,7 @@ void blink_get_confg_defaults(blink_conf_t *conf)
 *
 *  \note
 ******************************************************************************/
-void blink_init(blink_inst_t *inst, blink_conf_t conf)
+void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 {
 	inst->conf          = conf;
 	
@@ -49,7 +49,7 @@ void blink_init(blink_inst_t *inst, blink_conf_t conf)
 *
 *  \note
 ******************************************************************************/
-uint8_t blink_task(blink_inst_t *inst)
+uint8_t blink_task(blink_inst_t * const inst)
 {
 	if((*inst->conf.tick_ms_ptr - inst->last_tick_ms) >= (inst->conf.ticks_per_time_unit))
 	{
@@ -135,7 +135,7 @@ uint8_t blink_task(blink_inst_t *inst)
 *
 *  \note sets num of blinks by bit position num_blinks = 0 turns all off
 ******************************************************************************/
-void blink_set(blink_inst_t *inst, uint8_t num_blinks, uint8_t on_off)
+void blink_set(blink_inst_t * const inst, uint8_t const num_blinks, uint8_t const on_off)
 {
 	if(num_blinks == 0)
 	{

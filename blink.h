@@ -48,10 +48,10 @@ typedef struct blink_inst_t
 /**************************************************************************************************
 *                                            PROTOTYPES
 *************************************************^************************************************/
-void blink_get_confg_defaults(blink_conf_t *conf);
-void blink_init(blink_inst_t *inst, blink_conf_t conf);
-uint8_t blink_task(blink_inst_t *inst);
-void blink_set(blink_inst_t *inst, uint8_t num_blinks, uint8_t on_off);
+void blink_get_confg_defaults(blink_conf_t * const conf);
+void blink_init(blink_inst_t * const inst, blink_conf_t const conf);
+uint8_t blink_task(blink_inst_t * const inst);
+void blink_set(blink_inst_t * const inst, uint8_t const num_blinks, uint8_t const on_off);
 
 
 #endif /* BLINK_H_ */
