@@ -42,7 +42,7 @@ void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 	inst->out           = 0;
 	inst->count         = 0;
 	
-	inst->last_tick     = 0;
+	inst->last_tick     = *inst->conf.tick_ptr;
 }
 
 /******************************************************************************
