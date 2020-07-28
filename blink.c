@@ -48,7 +48,7 @@ void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 /******************************************************************************
 *  \brief Blink task
 *
-*  \note
+*  \note return value is blink output
 ******************************************************************************/
 uint8_t blink_task(blink_inst_t * const inst)
 {
@@ -151,7 +151,7 @@ uint8_t blink_task(blink_inst_t * const inst)
 		} /* switch */
 	}
 	
-	return (inst->out & 1u);
+	return ((inst->out ^ inst->conf.idle_value) & 1u);
 }
 
 /******************************************************************************
