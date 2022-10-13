@@ -179,3 +179,13 @@ void blink_set(blink_inst_t * const inst, uint8_t num_blinks, uint8_t const on_o
 		inst->blink_bit &= ~(1 << num_blinks);
 	}
 }
+
+/******************************************************************************
+*  \brief Blink idle?
+*
+*  \note returns 1 for idle and 0 while not complete with sequence
+******************************************************************************/
+uint8_t blink_idle(blink_inst_t * const inst)
+{
+	return (inst->blink_bit == 0) && (inst->state == GET_NEXT_SEQ);
+}
