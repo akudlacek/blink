@@ -8,7 +8,6 @@
 
 #include "blink.h"
 
-
 /**************************************************************************************************
 *                                            FUNCTIONS
 *************************************************^************************************************/
@@ -19,10 +18,12 @@
 ******************************************************************************/
 void blink_get_confg_defaults(blink_conf_t * const conf)
 {
-	conf->tick_ptr             = 0;
-	conf->ticks_per_time_unit  = 0;
-	conf->blink_separation     = 0;
-	conf->idle_value           = 0;
+	conf->tick_ptr          = 0;
+	conf->on_time_tick      = 0;
+	conf->off_time_tick     = 0;
+	conf->sep_time_tick     = 0;
+	conf->prsst_time_tick   = 0;
+	conf->polarity          = 0;
 }
 
 /******************************************************************************
@@ -32,17 +33,15 @@ void blink_get_confg_defaults(blink_conf_t * const conf)
 ******************************************************************************/
 void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 {
-	inst->conf          = conf;
-	
-	inst->state         = GET_NEXT_SEQ;
-	
-	inst->blink_bit     = 0;
-	inst->bit_number    = 0;
-	
-	inst->out           = 0;
-	inst->count         = 0;
-	
-	inst->last_tick     = *inst->conf.tick_ptr;
+	inst->conf            = conf;
+	inst->bit_flg         = 0;
+	inst->last_bit_flg    = 0;
+	inst->state           = GET_NEXT_SEQ;
+	inst->bit_num         = 0;
+	inst->out             = 0;
+	inst->count           = 0;
+	inst->prev_prsst_tick = *inst->conf.tick_ptr;
+	inst->prev_tick       = *inst->conf.tick_ptr;
 }
 
 /******************************************************************************
@@ -53,61 +52,79 @@ void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 uint8_t blink_task(blink_inst_t * const inst)
 {
 	//if no blink bit set and done blinking go to idle value
-	if((inst->blink_bit == 0) && (inst->state == GET_NEXT_SEQ))
+	if(blink_idle(inst))
 	{
 		inst->out = 0;
-		return (inst->conf.idle_value & 1u);
 	}
 	//run state machine
 	else
 	{
+		//turn on bits
+		inst->prsst_bit_flg |= inst->bit_flg;
+		
+		/*This block of code before the state machine handles keeping the faults blinking for a min amount of time after it is set*/
+		//if bit flag changed to 1
+		if((inst->bit_flg ^ inst->last_bit_flg) & inst->bit_flg)
+		{
+			inst->prev_prsst_tick = *inst->conf.tick_ptr; //reset persistence timer
+		}
+		
+		//persistence timer elapsed
+		if((*inst->conf.tick_ptr - inst->prev_prsst_tick) >= (inst->conf.prsst_time_tick))
+		{
+			//clear bits
+			inst->prsst_bit_flg &= inst->bit_flg;
+		}
+		
+		//record last bit flag
+		inst->last_bit_flg = inst->bit_flg;
+		
 		switch(inst->state)
 		{
 			case GET_NEXT_SEQ:
-			//if no blink bit set in this bit position, increment
-			if(((inst->blink_bit >> inst->bit_number) & 1u) == 0)
+			//no live blink, go to next bit
+			if(((inst->prsst_bit_flg >> inst->bit_num) & 1u) == 0)
 			{
-				inst->bit_number++;
+				inst->bit_num++;
 				
 				//wrap
-				if(inst->bit_number > BLINKS_MAX)
+				if(inst->bit_num > BLINKS_MAX)
 				{
-					inst->bit_number = 0;
+					inst->bit_num = 0;
 				}
 				
 				inst->out = 0;
-				
-				/*stay in GET_NEXT_SEQ state*/
 			}
 			//live bit found
 			else
 			{
-				inst->count     = 0;                      //reset count
-				inst->out       = 1;                      //start first blink
-				inst->last_tick = *inst->conf.tick_ptr;   //reset tick time
-				inst->state     = BLINKING;               //go to blink state
+				inst->count     = 0;
+				inst->out       = 1;
+				inst->prev_tick = *inst->conf.tick_ptr;
+				inst->state     = BLINKING;
 			}
 			break;
 			
 			case BLINKING:
-			if((*inst->conf.tick_ptr - inst->last_tick) >= (inst->conf.ticks_per_time_unit))
+			//time based on if it on or off because there are 2 different thresholds.
+			if((*inst->conf.tick_ptr - inst->prev_tick) >= (inst->out ? inst->conf.on_time_tick : inst->conf.off_time_tick))
 			{
-				inst->count += inst->out; //adds to count if out is 1
-				inst->out   ^= 1;         //toggles output
+				inst->count++;
+				inst->out ^= 1;                //toggles output
 				
 				//if hit number of blinks
-				if(inst->count > inst->bit_number)
+				if((inst->count/2) > inst->bit_num)
 				{
-					inst->bit_number++; //Advance to the next sequence, so it does not get stuck running same bit
+					inst->bit_num++; //Advance to the next sequence, so it does not get stuck running same bit
 					
 					//wrap
-					if(inst->bit_number > BLINKS_MAX)
+					if(inst->bit_num > BLINKS_MAX)
 					{
-						inst->bit_number = 0;
+						inst->bit_num = 0;
 					}
 					
 					//if no separation go to GET_NEXT_SEQ state
-					if(inst->conf.blink_separation == 0)
+					if(inst->conf.sep_time_tick == 0)
 					{
 						inst->state = GET_NEXT_SEQ;
 					}
@@ -120,38 +137,28 @@ uint8_t blink_task(blink_inst_t * const inst)
 					}
 				}
 				
-				inst->last_tick = *inst->conf.tick_ptr;
+				inst->prev_tick = *inst->conf.tick_ptr;
 			}
 			break;
 				
 			case SEQ_SEPARATION:
-			if((*inst->conf.tick_ptr - inst->last_tick) >= (inst->conf.ticks_per_time_unit))
+			if((*inst->conf.tick_ptr - inst->prev_tick) >= (inst->conf.sep_time_tick))
 			{
-				inst->count++;
+				inst->state = GET_NEXT_SEQ;
 				
-				if(inst->count >= inst->conf.blink_separation)
-				{
-					inst->state = GET_NEXT_SEQ;
-				}
-				
-				inst->last_tick = *inst->conf.tick_ptr;
+				inst->prev_tick = *inst->conf.tick_ptr;
 			}
 			break;
 			
 			default:
 			//something bad happened
-			inst->state         = GET_NEXT_SEQ;
-			inst->blink_bit     = 0;
-			inst->bit_number    = 0;
-			inst->out           = 0;
-			inst->count         = 0;
-			inst->last_tick     = *inst->conf.tick_ptr;
-			return (inst->conf.idle_value & 1u);
+			//this assumes config is valid.
+			blink_init(inst, inst->conf);
 			break;
 		} /* switch */
 	}
 	
-	return ((inst->out ^ inst->conf.idle_value) & 1u);
+	return ((inst->out ^ inst->conf.polarity) & 1u);
 }
 
 /******************************************************************************
@@ -163,7 +170,7 @@ void blink_set(blink_inst_t * const inst, uint8_t num_blinks, uint8_t const on_o
 {
 	if(num_blinks == 0)
 	{
-		inst->blink_bit = 0;
+		inst->bit_flg = 0;
 		
 		return;
 	}
@@ -172,11 +179,11 @@ void blink_set(blink_inst_t * const inst, uint8_t num_blinks, uint8_t const on_o
 	
 	if(on_off == 1)
 	{
-		inst->blink_bit |= (1 << num_blinks);
+		inst->bit_flg |= (1 << num_blinks);
 	}
 	else if(on_off == 0)
 	{
-		inst->blink_bit &= ~(1 << num_blinks);
+		inst->bit_flg &= ~(1 << num_blinks);
 	}
 }
 
@@ -187,5 +194,5 @@ void blink_set(blink_inst_t * const inst, uint8_t num_blinks, uint8_t const on_o
 ******************************************************************************/
 uint8_t blink_idle(blink_inst_t * const inst)
 {
-	return (inst->blink_bit == 0) && (inst->state == GET_NEXT_SEQ);
+	return (inst->prsst_bit_flg == 0) && (inst->bit_flg == 0) && (inst->state == GET_NEXT_SEQ);
 }
