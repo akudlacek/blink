@@ -32,11 +32,9 @@ typedef uint8_t blink_bit_flg_t;
 #endif
 
 //User set blink tick type
-#ifndef BLINK_TICK_TYPE
-#define BLINK_TICK_TYPE uint32_t
+#ifndef TICK_TYPE
+#define TICK_TYPE uint32_t
 #endif
-
-typedef BLINK_TICK_TYPE blink_tick_t;
 
 typedef enum blink_state_t
 {
@@ -47,12 +45,12 @@ typedef enum blink_state_t
 
 typedef struct blink_conf_t
 {
-	const volatile blink_tick_t *     tick_ptr; //Pointer to time tick variable
+	const volatile TICK_TYPE *        tick_ptr; //Pointer to time tick variable
 	
-	blink_tick_t                  on_time_tick; //Blink on time
-	blink_tick_t                 off_time_tick; //Blink off time
-	blink_tick_t                 sep_time_tick; //Blink separation
-	blink_tick_t               prsst_time_tick; //Minimum amount of time a blink code will persist after all clear
+	TICK_TYPE                     on_time_tick; //Blink on time
+	TICK_TYPE                    off_time_tick; //Blink off time
+	TICK_TYPE                    sep_time_tick; //Blink separation
+	TICK_TYPE                  prsst_time_tick; //Minimum amount of time a blink code will persist after all clear
 	uint8_t                           polarity; //Inverts output when 1, normal when 0;
 } blink_conf_t;
 
@@ -70,8 +68,8 @@ typedef struct blink_inst_t
 	uint8_t                                out; //Holds output value
 	uint8_t                              count; //Holds current blink count
 	
-	blink_tick_t               prev_prsst_tick; //Last time bit was enabled, for persistence of blink
-	blink_tick_t                     prev_tick; //Last time the state machine advanced
+	TICK_TYPE                  prev_prsst_tick; //Last time bit was enabled, for persistence of blink
+	TICK_TYPE                        prev_tick; //Last time the state machine advanced
 } blink_inst_t;
 
 
