@@ -31,11 +31,6 @@ typedef uint32_t blink_bit_flg_t;
 typedef uint8_t blink_bit_flg_t;
 #endif
 
-//User set blink tick type
-#ifndef TICK_TYPE
-#define TICK_TYPE uint32_t
-#endif
-
 typedef enum blink_state_t
 {
 	GET_NEXT_SEQ,
@@ -45,8 +40,6 @@ typedef enum blink_state_t
 
 typedef struct blink_conf_t
 {
-	const volatile TICK_TYPE *        tick_ptr; //Pointer to time tick variable
-	
 	TICK_TYPE                     on_time_tick; //Blink on time
 	TICK_TYPE                    off_time_tick; //Blink off time
 	TICK_TYPE                    sep_time_tick; //Blink separation

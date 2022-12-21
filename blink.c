@@ -7,6 +7,8 @@
 
 
 #include "blink.h"
+#include "timer.h"
+
 
 /**************************************************************************************************
 *                                            FUNCTIONS
@@ -18,11 +20,10 @@
 ******************************************************************************/
 void blink_get_confg_defaults(blink_conf_t * const conf)
 {
-	conf->tick_ptr          = 0;
-	conf->on_time_tick      = 0;
-	conf->off_time_tick     = 0;
-	conf->sep_time_tick     = 0;
-	conf->prsst_time_tick   = 0;
+	conf->on_time_tick      = 200;
+	conf->off_time_tick     = 350;
+	conf->sep_time_tick     = 1000;
+	conf->prsst_time_tick   = 5000;
 	conf->polarity          = 0;
 }
 
@@ -40,8 +41,8 @@ void blink_init(blink_inst_t * const inst, blink_conf_t const conf)
 	inst->bit_num         = 0;
 	inst->out             = 0;
 	inst->count           = 0;
-	inst->prev_prsst_tick = *inst->conf.tick_ptr;
-	inst->prev_tick       = *inst->conf.tick_ptr;
+	tmrReset(&inst->prev_prsst_tick);
+	tmrReset(&inst->prev_tick);
 }
 
 /******************************************************************************
@@ -66,11 +67,11 @@ uint8_t blink_task(blink_inst_t * const inst)
 		//if bit flag changed to 1
 		if((inst->bit_flg ^ inst->last_bit_flg) & inst->bit_flg)
 		{
-			inst->prev_prsst_tick = *inst->conf.tick_ptr; //reset persistence timer
+			tmrReset(&inst->prev_prsst_tick); //reset persistence timer
 		}
 		
 		//persistence timer elapsed
-		if((*inst->conf.tick_ptr - inst->prev_prsst_tick) >= (inst->conf.prsst_time_tick))
+		if (tmrCheck(&inst->prev_prsst_tick, inst->conf.prsst_time_tick))
 		{
 			//clear bits
 			inst->prsst_bit_flg &= inst->bit_flg;
@@ -100,14 +101,14 @@ uint8_t blink_task(blink_inst_t * const inst)
 			{
 				inst->count     = 0;
 				inst->out       = 1;
-				inst->prev_tick = *inst->conf.tick_ptr;
 				inst->state     = BLINKING;
+				tmrReset(&inst->prev_tick);
 			}
 			break;
 			
 			case BLINKING:
 			//time based on if it on or off because there are 2 different thresholds.
-			if((*inst->conf.tick_ptr - inst->prev_tick) >= (inst->out ? inst->conf.on_time_tick : inst->conf.off_time_tick))
+			if (tmrCheckReset(&inst->prev_tick, (inst->out ? inst->conf.on_time_tick : inst->conf.off_time_tick)))
 			{
 				inst->count++;
 				inst->out ^= 1;                //toggles output
@@ -136,17 +137,13 @@ uint8_t blink_task(blink_inst_t * const inst)
 						inst->state = SEQ_SEPARATION;
 					}
 				}
-				
-				inst->prev_tick = *inst->conf.tick_ptr;
 			}
 			break;
 				
 			case SEQ_SEPARATION:
-			if((*inst->conf.tick_ptr - inst->prev_tick) >= (inst->conf.sep_time_tick))
+			if (tmrCheckReset(&inst->prev_tick, inst->conf.sep_time_tick))
 			{
 				inst->state = GET_NEXT_SEQ;
-				
-				inst->prev_tick = *inst->conf.tick_ptr;
 			}
 			break;
 			
